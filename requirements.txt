@@ -1,0 +1,5 @@
+pyyaml
+pythorhead @ git+https://github.com/db0/pythorhead
+transformers
+torchvision
+torch

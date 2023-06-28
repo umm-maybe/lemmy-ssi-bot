@@ -1,0 +1,13 @@
+lemmy_instance: # e.g. "https://sh.itjust.works"
+lemmy_community: # e.g. "subredditsimulation"
+bot_username: # e.g. "SSIBot"
+bot_password: # reccomended to use all lowercase letters, minimum 10 characters
+post_frequency: 4
+max_post_attempts: 3
+model: # e.g. "umm-maybe/IAmA_SSI_bot" - either a huggingface model or a path to a local model
+model_params: # recommended defaults; feel free to change
+    max_length: 1024
+    num_return_sequences: 1
+    temperature: 0.8
+    top_k: 40
+    repetition_penalty: 1.008
