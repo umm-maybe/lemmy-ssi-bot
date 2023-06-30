@@ -9,7 +9,8 @@ from random import random
 import pandas as pd
 import os.path
 
-from sanitation import clean_text
+from sanitation import clean_text, bad_keyword, is_toxic
+from image_gen import generate_image
 
 import yaml
 from pythorhead import Lemmy
@@ -41,6 +42,8 @@ class lemmy_bot:
         self.hours_since_last_post = self.post_frequency
         self.model = pipeline(model=self.config['model'], task='text-generation')
         self.params = self.config['model_params']
+        self.thresh = self.config['thresholds']
+        self.badkey = self.config['negative_keywords']
         # check if history table exists; initialize if it doesn't
         if os.path.isfile("history.csv"):
             self.history = pd.read_csv("history.csv")
@@ -59,9 +62,12 @@ class lemmy_bot:
                 self.hours_since_last_post = (now - self.last_post_time).total_seconds() / 3600
             time.sleep(60)
 
-    # function to generate posts (text only right now)
+    # function to generate posts
     def make_post(self):
-        prompt = '<|soss|><|sot|>'
+        if random()<self.config['image_post_share']:
+            prompt = '<|sols|><|sot|>'
+        else:
+            prompt = '<|soss|><|sot|>'
         for attempt in range(self.config['max_post_attempts']):
             generated_text = self.model(prompt, return_full_text=False, **self.params)[0]['generated_text']
             print(f"GENERATED:\n{generated_text}")
@@ -69,21 +75,42 @@ class lemmy_bot:
             if not title:
                 print("Failed to generate post title, trying again...")
                 continue
-            post_body = clean_text(generated_text.split('<|sost|>')[1].split('<|eost|>')[0])
-            if not post_body:
-                print("Failed to generate post body, trying again...")
+            if bad_keyword(title) or is_toxic(title):
+                print("Bad title generated, re-generating...")
                 continue
-            try:
-                post = self.lemmy.post.create(community_id=self.community_id,name=title,body=post_body)
-                if post:
-                    print(f"Successfully posted")
-                    break
-                else:
-                    print("Failed to post, trying again in 5 minutes...")
-                    time.sleep(300)
+            if 'sols' in prompt:
+                image_path = generate_image(title)
+                image_dict = self.lemmy.image.upload(image_path)
+                try:
+                    post = self.lemmy.post.create(community_id=self.community_id,name=title,url=image[0]["image_url"])
+                    if post:
+                        print(f"Successfully posted")
+                        break
+                    else:
+                        print("Failed to post, trying again in 5 minutes...")
+                        time.sleep(300)
+                        continue
+                except Exception as e:
+                    print(f"Failed to post ({e})")
+            else:
+                post_body = clean_text(generated_text.split('<|sost|>')[1].split('<|eost|>')[0])
+                if not post_body:
+                    print("Failed to generate post body, trying again...")
                     continue
-            except Exception as e:
-                print(f"Failed to post ({e})")
+                if bad_keyword(post_body,self.badkey) or is_toxic(post_body,self.thresh):
+                    print("Bad post body generated, re-generating...")
+                    continue
+                try:
+                    post = self.lemmy.post.create(community_id=self.community_id,name=title,body=post_body)
+                    if post:
+                        print(f"Successfully posted")
+                        break
+                    else:
+                        print("Failed to post, trying again in 5 minutes...")
+                        time.sleep(300)
+                        continue
+                except Exception as e:
+                    print(f"Failed to post ({e})")
 
     def read_posts(self):
         while True:
@@ -124,6 +151,9 @@ class lemmy_bot:
             response = clean_text(generated_text.split('<|eor|>')[0])
             if not response:
                 print("Failed to generate post reply, trying again...")
+                continue
+            if bad_keyword(response,self.badkey) or is_toxic(response,self.thresh):
+                print("Bad text generated, re-generating...")
                 continue
             try:
                 post_id = post_dict["post"]["id"]
@@ -186,6 +216,9 @@ class lemmy_bot:
             if not response:
                 print("Failed to generate comment reply, trying again...")
                 continue
+            if bad_keyword(response,self.badkey) or is_toxic(response,self.thresh):
+                print("Bad text generated, re-generating...")
+                continue
             try:
                 reply = self.lemmy.comment.create(post_id=original_post["post"]["id"],content=response,parent_id=comment_dict["comment"]["id"])
                 if reply:
@@ -207,8 +240,14 @@ class lemmy_bot:
 
 
 def main():
-    bot = lemmy_bot(sys.argv[1])
-    bot.run()
+#    bot = lemmy_bot(sys.argv[1])
+#    bot.run()
+    bot1 = lemmy_bot("iama.yaml")
+    bot1.run()
+    bot2 = lemmy_bot("buddhist.yaml")
+    bot2.run()
+    bot3 = lemmy_bot("artbot")
+    bot3.run()
     
 if __name__ == "__main__":
     main()
