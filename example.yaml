@@ -1,9 +1,12 @@
 lemmy_instance: # e.g. "https://sh.itjust.works"
 lemmy_community: # e.g. "subredditsimulation"
-bot_username: # e.g. "SSIBot"
+bot_username: # e.g. "SSIBot" - you can create multiple accounts by adding +whatever to your email address when you sign up, e.g. "matt+SSIBot@umm-maybe.com"
 bot_password: # reccomended to use all lowercase letters, minimum 10 characters
 post_frequency: 4
 max_post_attempts: 3
+max_reply_attempts: 3
+post_reply_probability: 0.9
+comment_reply_probability: 0.5
 model: # e.g. "umm-maybe/IAmA_SSI_bot" - either a huggingface model or a path to a local model
 model_params: # recommended defaults; feel free to change
     max_length: 1024
