@@ -10,7 +10,7 @@ import pandas as pd
 import os.path
 
 from sanitation import clean_text, bad_keyword, is_toxic
-from image_gen import generate_image
+#from image_gen import generate_image
 
 import yaml
 from pythorhead import Lemmy
@@ -45,8 +45,9 @@ class lemmy_bot:
         self.thresh = self.config['thresholds']
         self.badkey = self.config['negative_keywords']
         # check if history table exists; initialize if it doesn't
-        if os.path.isfile("history.csv"):
-            self.history = pd.read_csv("history.csv")
+        self.historyfile = f"{self.config['bot_username']}_history.csv" 
+        if os.path.isfile(self.historyfile):
+            self.history = pd.read_csv(self.historyfile)
         else:
             self.history = pd.DataFrame(columns = ['type', 'id', 'time'])
 
@@ -75,7 +76,7 @@ class lemmy_bot:
             if not title:
                 print("Failed to generate post title, trying again...")
                 continue
-            if bad_keyword(title) or is_toxic(title):
+            if bad_keyword(title,self.badkey) or is_toxic(title,self.thresh) or title.find(" ")==-1:
                 print("Bad title generated, re-generating...")
                 continue
             if 'sols' in prompt:
@@ -97,7 +98,7 @@ class lemmy_bot:
                 if not post_body:
                     print("Failed to generate post body, trying again...")
                     continue
-                if bad_keyword(post_body,self.badkey) or is_toxic(post_body,self.thresh):
+                if bad_keyword(post_body,self.badkey) or is_toxic(post_body,self.thresh) or post_body.find(" ")==-1:
                     print("Bad post body generated, re-generating...")
                     continue
                 try:
@@ -130,7 +131,7 @@ class lemmy_bot:
                     # save the post so we know that we've looked at it
             new_ids = []
             # back up the history table
-            self.history.to_csv('history.csv')
+            self.history.to_csv(self.historyfile)
             time.sleep(60)
     
     def post_reply(self,post_dict):
@@ -152,7 +153,7 @@ class lemmy_bot:
             if not response:
                 print("Failed to generate post reply, trying again...")
                 continue
-            if bad_keyword(response,self.badkey) or is_toxic(response,self.thresh):
+            if bad_keyword(response,self.badkey) or is_toxic(response,self.thresh) or response.find(" ")==-1:
                 print("Bad text generated, re-generating...")
                 continue
             try:
@@ -185,7 +186,7 @@ class lemmy_bot:
                     if random() < self.config['comment_reply_probability']:
                         self.comment_reply(new_comment)
             # back up the history table
-            self.history.to_csv('history.csv')                        
+            self.history.to_csv(self.historyfile)                        
             time.sleep(60)
 
     def comment_reply(self,comment_dict):
@@ -216,7 +217,7 @@ class lemmy_bot:
             if not response:
                 print("Failed to generate comment reply, trying again...")
                 continue
-            if bad_keyword(response,self.badkey) or is_toxic(response,self.thresh):
+            if bad_keyword(response,self.badkey) or is_toxic(response,self.thresh) or response.find(" ")==-1:
                 print("Bad text generated, re-generating...")
                 continue
             try:
@@ -240,14 +241,8 @@ class lemmy_bot:
 
 
 def main():
-#    bot = lemmy_bot(sys.argv[1])
-#    bot.run()
-    bot1 = lemmy_bot("iama.yaml")
-    bot1.run()
-    bot2 = lemmy_bot("buddhist.yaml")
-    bot2.run()
-    bot3 = lemmy_bot("artbot")
-    bot3.run()
+    bot = lemmy_bot(sys.argv[1])
+    bot.run()
     
 if __name__ == "__main__":
     main()

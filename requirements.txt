@@ -1,8 +1,9 @@
 pyyaml
 pythorhead @ git+https://github.com/db0/pythorhead
-transformers
-torchvision
 torch
+accelerate
+transformers
 detoxify
-diffusers
-Pillow
+pandas
+#diffusers==0.12.1
+#Pillow
