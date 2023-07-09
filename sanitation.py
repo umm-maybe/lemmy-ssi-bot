@@ -13,7 +13,11 @@ def bad_keyword(text, negative_keywords):
     return False
 
 def is_toxic(text,thresholds):
-    scores = detox.predict(text)
+    try:
+        scores = detox.predict(text)
+    except Exception as e:
+        print(e)
+        return True
     if scores:
         for attribute in thresholds.keys():
             score = scores[attribute]
@@ -28,16 +32,16 @@ def is_toxic(text,thresholds):
 
 def clean_text(generated_text):
     # look for any '!!!'; take the part before it
-    generated_text = generated_text.split('!!!')[0]
+    clean_text = generated_text.split('!!!')[0]
     # look for last newline
-    truncate = generated_text.rfind('\n')
+    truncate = clean_text.rfind('\n')
     if truncate > -1:
-        cleanStr = generated_text[:truncate]
-        return cleanStr
+        clean_text = clean_text[:truncate]
+        return clean_text
     # if we can't find a newline, look for terminal punctuation
-    pmatch = re.search(r'[?.!]', generated_text)
+    pmatch = re.search(r'[?.!]', clean_text)
     if pmatch:
-        trimpart = re.split(r'[?.!"]', generated_text)[-1]
-        cleanStr = generated_text.replace(trimpart, '')
-        return cleanStr
-    return None
+        trimpart = re.split(r'[?.!"]', clean_text)[-1]
+        clean_text = clean_text.replace(trimpart, '')
+        return clean_text
+    return clean_text

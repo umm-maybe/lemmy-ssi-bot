@@ -15,6 +15,8 @@ from sanitation import clean_text, bad_keyword, is_toxic
 import yaml
 from pythorhead import Lemmy
 from transformers import pipeline
+from gradio_client import Client
+import base64
 
 def load_yaml(filename):
     with open(filename, 'r') as stream:
@@ -23,6 +25,21 @@ def load_yaml(filename):
         except yaml.YAMLError as error:
             print(error)
     return None
+
+def describe_image(imgurl):
+    client = Client("https://umm-maybe-nlpconnect-vit-gpt2-image-captioning.hf.space/")
+    result = client.predict(
+				imgurl,	# str (filepath or URL to image) in 'Input Image' Image component
+				api_name="/predict")
+    return(result)
+
+def generate_image(prompt):
+    client = Client("https://umm-maybe-mitsua-diffusion-one.hf.space/")
+    imgpth = client.predict(
+				prompt,	# str  in 'Input' Textbox component
+				api_name="/predict"
+    )
+    return imgpth
 
 class lemmy_bot:
     # initialize bot
@@ -72,6 +89,9 @@ class lemmy_bot:
         for attempt in range(self.config['max_post_attempts']):
             generated_text = self.model(prompt, return_full_text=False, **self.params)[0]['generated_text']
             print(f"GENERATED:\n{generated_text}")
+            if generated_text.find('<|eot|>') == -1:
+                print("Title tag not found, trying again...")
+                continue
             title = clean_text(generated_text.split('<|eot|>')[0])
             if not title:
                 print("Failed to generate post title, trying again...")
@@ -143,12 +163,16 @@ class lemmy_bot:
         elif "url" in post_properties:
             #linkpost
             post_url = post_dict["post"]["url"]
-            prompt = f'<|sols|><|sot|>{post_title}<|eot|><|sol|>{post_url}<|eol|><|sor|>'
+            alt_text = describe_image(post_url)
+            prompt = f'<|sols|><|sot|>{post_title}<|eot|><|sol|>{alt_text}<|eol|><|sor|>'
         else:
             prompt = f'<|soss|><|sot|>{post_title}<|eot|><|sor|>'
         for attempt in range(self.config['max_reply_attempts']):
             generated_text = self.model(prompt, return_full_text=False, **self.params)[0]['generated_text']
             print(f"GENERATED:\n{generated_text}")
+            if generated_text.find('<|eor|>') == -1:
+                print("Reply not tagged, trying again...")
+                continue
             response = clean_text(generated_text.split('<|eor|>')[0])
             if not response:
                 print("Failed to generate post reply, trying again...")

@@ -24,23 +24,11 @@ Install the required prerequisites with:
 If you named your bot's config file *bot.yaml*, the command to run it would be:
 `python3 run.py bot.yaml`
 
-Note that you can run multiple bots by editing the `main()` section of the *run.py* script to reference additional config files, either as further command-line arguments or as hard-coded references in the script, e.g.:
-
-    bot1 = lemmy_bot(sys.argv[1])
-    bot1.run
-    bot2 = lemmy_bot(sys.argv[2])
-    bot2.run
-    bot3 = lemmy_bot("bot3.yaml")
-    bot3.run
-    ...
-
 # Current limitations
 Because the Lemmy API doesn't return the parent ID of comments, a major limitation is the inability to accumulate more than a single post and comment in the prompt. Thus, the bot only polls top-level comments.
 
 The original ssi-bot had a text generation daemon and database, whereas this repo is using a much simpler technique to track which posts and comments have been replied to, and it's possible that some items may get missed as a result.
 
-No toxicity filtering has been implemented yet, and should be added, since GPT-2 is prone to generating posts/comments that some may find offensive. Use common sense and don't run your bot in an instance or community where it will be unwelcome.  Don't try to turn this into a disinformation or spam bot either.
-
-Image posting has not been implemented yet, but can easily be added.
+Even though toxicity filtering is included, GPT-2 is prone to generating posts/comments that some may find offensive. Use common sense and don't run your bot in an instance or community where it will be unwelcome.  Don't try to turn this into a disinformation or spam bot either.
 
 Pull requests welcome.
